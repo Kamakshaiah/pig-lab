@@ -1,6 +1,6 @@
 from pig_util import outputSchema
 
-@outputSchema("as:int")
+@outputSchema("as:float")
 def square(num):
     if num == None:
         return None
