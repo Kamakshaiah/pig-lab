@@ -1,11 +1,11 @@
-from pig_util import outputSchema
+#from pig_util import outputSchema
 
-@outputSchema("as:float")
+@outputSchema("num:float")
 def square(num):
     if num == None:
         return None
-    return ((num) * (num))
+    return num * num
 
 @outputSchema("word:chararray")
 def concat(word):
-    return word + word
+    return word + '-' + word
