@@ -1,0 +1,22 @@
+-- Load HRM employee dataset
+employees = LOAD 'hrm_employee_data.csv' USING PigStorage(',') AS (employee_id:CHARARRAY, department:CHARARRAY, salary:DOUBLE, job_role:CHARARRAY, hire_date:CHARARRAY);
+
+-- Calculate average salary per department
+avg_salary = FOREACH (GROUP employees BY department) GENERATE group AS department, AVG(employees.salary) AS avg_salary;
+
+-- Categorize employees based on salary
+tiered_employees = FOREACH employees GENERATE employee_id, 
+    (CASE 
+        WHEN salary > 80000 THEN 'Executive'
+        WHEN salary > 50000 THEN 'Mid-Level'
+        ELSE 'Entry-Level' 
+    END) AS salary_tier;
+
+-- Identify most common job roles
+job_roles = FOREACH (GROUP employees BY job_role) GENERATE group AS job_role, COUNT(employees) AS job_count;
+job_roles_sorted = ORDER job_roles BY job_count DESC;
+
+-- Store the results
+STORE avg_salary INTO 'avg_salary' USING PigStorage(',');
+STORE tiered_employees INTO 'tiered_employees' USING PigStorage(',');
+STORE job_roles_sorted INTO 'job_roles' USING PigStorage(',');

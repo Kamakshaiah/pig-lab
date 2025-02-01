@@ -1,0 +1,22 @@
+-- Load IT and administration dataset
+it_admin_data = LOAD 'it_admin_data.csv' USING PigStorage(',') AS (employee_id:CHARARRAY, department:CHARARRAY, project_cost:DOUBLE, system_uptime:DOUBLE, tickets_resolved:INT, date:CHARARRAY);
+
+-- Calculate average project cost per department
+avg_project_cost = FOREACH (GROUP it_admin_data BY department) GENERATE group AS department, AVG(it_admin_data.project_cost) AS avg_project_cost;
+
+-- Categorize departments based on system uptime
+uptime_tiers = FOREACH it_admin_data GENERATE employee_id, 
+    (CASE 
+        WHEN system_uptime > 99 THEN 'Excellent Uptime'
+        WHEN system_uptime > 95 THEN 'Good Uptime'
+        ELSE 'Needs Improvement' 
+    END) AS uptime_tier;
+
+-- Identify departments with highest number of tickets resolved
+department_tickets = FOREACH (GROUP it_admin_data BY department) GENERATE group AS department, SUM(it_admin_data.tickets_resolved) AS total_tickets;
+department_tickets_sorted = ORDER department_tickets BY total_tickets DESC;
+
+-- Store the results
+STORE avg_project_cost INTO 'avg_project_cost' USING PigStorage(',');
+STORE uptime_tiers INTO 'uptime_tiers' USING PigStorage(',');
+STORE department_tickets_sorted INTO 'department_tickets' USING PigStorage(',');

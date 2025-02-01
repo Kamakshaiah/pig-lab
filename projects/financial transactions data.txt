@@ -1,0 +1,21 @@
+-- Load financial transactions dataset
+transactions = LOAD 'financial_transactions.csv' USING PigStorage(',') AS (account_id:CHARARRAY, transaction_id:CHARARRAY, amount:DOUBLE, transaction_type:CHARARRAY, date:CHARARRAY);
+
+-- Calculate total spending per account
+total_spending = FOREACH (GROUP transactions BY account_id) GENERATE group AS account_id, SUM(transactions.amount) AS total_amount;
+
+-- Categorize accounts based on spending
+tiered_accounts = FOREACH total_spending GENERATE account_id, 
+    (CASE 
+        WHEN total_amount > 10000 THEN 'Premium'
+        WHEN total_amount > 5000 THEN 'Standard'
+        ELSE 'Basic' 
+    END) AS account_tier;
+
+-- Identify most frequent transaction types
+transaction_types = FOREACH (GROUP transactions BY transaction_type) GENERATE group AS transaction_type, COUNT(transactions) AS transaction_count;
+transaction_types_sorted = ORDER transaction_types BY transaction_count DESC;
+
+-- Store the results
+STORE tiered_accounts INTO 'tiered_accounts' USING PigStorage(',');
+STORE transaction_types_sorted INTO 'transaction_types' USING PigStorage(',');

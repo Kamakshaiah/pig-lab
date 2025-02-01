@@ -1,0 +1,22 @@
+-- Load operations dataset
+operations = LOAD 'operations_data.csv' USING PigStorage(',') AS (operation_id:CHARARRAY, department:CHARARRAY, cost:DOUBLE, efficiency:DOUBLE, date:CHARARRAY);
+
+-- Calculate average cost per department
+avg_cost = FOREACH (GROUP operations BY department) GENERATE group AS department, AVG(operations.cost) AS avg_cost;
+
+-- Categorize operations based on efficiency
+efficiency_tiers = FOREACH operations GENERATE operation_id, 
+    (CASE 
+        WHEN efficiency > 90 THEN 'High Efficiency'
+        WHEN efficiency > 70 THEN 'Moderate Efficiency'
+        ELSE 'Low Efficiency' 
+    END) AS efficiency_tier;
+
+-- Identify departments with highest operations count
+department_counts = FOREACH (GROUP operations BY department) GENERATE group AS department, COUNT(operations) AS operation_count;
+department_counts_sorted = ORDER department_counts BY operation_count DESC;
+
+-- Store the results
+STORE avg_cost INTO 'avg_cost' USING PigStorage(',');
+STORE efficiency_tiers INTO 'efficiency_tiers' USING PigStorage(',');
+STORE department_counts_sorted INTO 'department_counts' USING PigStorage(',');

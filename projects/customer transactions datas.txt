@@ -1,0 +1,21 @@
+-- Load customer transactions dataset
+transactions = LOAD 'customer_transactions.csv' USING PigStorage(',') AS (customer_id:CHARARRAY, product_id:CHARARRAY, amount:DOUBLE, category:CHARARRAY, date:CHARARRAY);
+
+-- Calculate total spending per customer
+total_spending = FOREACH (GROUP transactions BY customer_id) GENERATE group AS customer_id, SUM(transactions.amount) AS total_amount;
+
+-- Categorize customers based on spending
+segmented_customers = FOREACH total_spending GENERATE customer_id, 
+    (CASE 
+        WHEN total_amount > 1000 THEN 'High Value'
+        WHEN total_amount > 500 THEN 'Medium Value'
+        ELSE 'Low Value' 
+    END) AS customer_segment;
+
+-- Identify top-selling products
+top_products = FOREACH (GROUP transactions BY product_id) GENERATE group AS product_id, SUM(transactions.amount) AS total_sales;
+top_products_sorted = ORDER top_products BY total_sales DESC;
+
+-- Store the results
+STORE segmented_customers INTO 'segmented_customers' USING PigStorage(',');
+STORE top_products_sorted INTO 'top_products' USING PigStorage(',');
